@@ -4,41 +4,46 @@ const { Telegraf, Markup } = require('telegraf');
 // Initialisation du bot avec le token
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
+// Variable dynamique pour l'URL (initialisée depuis .env)
+let currentUrl = process.env.INITIAL_URL || 'https://google.com/';
+
 // Commande /start
 bot.start((ctx) => {
   ctx.reply(
-    'Bienvenue dans Flappy Oxo! Choisissez une option pour commencer à jouer:',
+    `Bienvenue dans ${process.env.GAME_TITLE || 'votre application'}! Cliquez ci-dessous pour commencer :`,
     Markup.inlineKeyboard([
-      [
-        Markup.button.webApp('Jouer sur oxelta.io', 'https://flappy.oxo.oxelta.io/'),
-        Markup.button.webApp('Jouer en local', 'http://127.0.0.1:3000/'),
-      ],
+      [Markup.button.webApp('Accéder à la mini-app', currentUrl)],
     ])
   );
 });
 
-// Commande pour modifier les paramètres (réservée à l'admin)
+// Commande pour mettre à jour l'URL (admin uniquement)
 const ADMIN_ID = process.env.ADMIN_ID; // Votre ID Telegram
 
-bot.command('update', (ctx) => {
+bot.command('updateurl', (ctx) => {
   if (ctx.from.id.toString() === ADMIN_ID) {
-    const args = ctx.message.text.split(' ').slice(1);
-    const [link1, link2] = args;
-    if (link1 && link2) {
-      process.env.LINK1 = link1;
-      process.env.LINK2 = link2;
-      ctx.reply('Les liens du jeu ont été mis à jour avec succès.');
+    const args = ctx.message.text.split(' ').slice(1); // Récupérer l'argument après /updateurl
+    const newUrl = args[0];
+
+    if (newUrl) {
+      currentUrl = newUrl; // Mettre à jour l'URL actuelle
+      ctx.reply(`✅ L'URL a été mise à jour avec succès : ${currentUrl}`);
     } else {
-      ctx.reply('Usage: /update <Lien1> <Lien2>');
+      ctx.reply('❌ Usage: /updateurl <Nouvelle_URL>\nExemple: /updateurl https://example.com');
     }
   } else {
-    ctx.reply("Vous n'êtes pas autorisé à utiliser cette commande.");
+    ctx.reply("❌ Vous n'êtes pas autorisé à utiliser cette commande.");
   }
+});
+
+// Commande pour afficher l'URL actuelle
+bot.command('currenturl', (ctx) => {
+  ctx.reply(`🔗 URL actuelle : ${currentUrl}`);
 });
 
 // Gestion des erreurs
 bot.catch((err, ctx) => {
-  console.error(`Erreur pour ${ctx.updateType}:`, err);
+  console.error(`❌ Erreur pour ${ctx.updateType}:`, err);
 });
 
 // Exportation du bot pour utilisation avec les webhooks
